@@ -1,0 +1,14 @@
+---
+- name: Run PowerShell Script with Parameters
+  hosts: windows
+  tasks:
+    - name: Run PowerShell script
+      win_shell: |
+        powershell.exe -File C:\Scripts\ExampleScriptAnsible_param.ps1 -klantcode "{{ klantcode }}"
+      args:
+        executable: cmd
+      register: ps_output
+
+    - name: Display PowerShell output
+      debug:
+        var: ps_output.stdout
