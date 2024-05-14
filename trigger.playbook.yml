@@ -13,4 +13,4 @@
         C:\Scripts\TriggerScript.ps1
       args:
         executable: powershell.exe
-      when: trigger_file.exists
+      when: trigger_file.stat.exists
