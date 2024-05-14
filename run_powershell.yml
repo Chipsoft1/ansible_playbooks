@@ -14,8 +14,7 @@
       debug:
         var: script_output.stdout
 
-    - name: Create a file if condition is met
-      ansible.builtin.file:
-        path: /tmp/trigger_file.txt
-        state: touch
+    - name: Create a trigger file if condition is met
+      ansible.windows.win_shell: |
+        New-Item -Path C:\Scripts\trigger_file.txt -ItemType File
       when: '"specific_output_condition" in script_output.stdout'
