@@ -3,8 +3,8 @@
   hosts: windows
   gather_facts: false  # Correctly set to a boolean value with proper indentation
   tasks:
-    - name: Run a PowerShell script
+    - name: Run a PowerShell script from a specific location
       ansible.windows.win_shell: |
-        Write-Output "Hello, this is a test from PowerShell"
+        C:\Scripts\ExampleScript.ps1
       args:
         executable: powershell.exe
