@@ -3,8 +3,14 @@
   hosts: windows
   gather_facts: false
   tasks:
+    - name: Check for trigger file
+      ansible.builtin.stat:
+        path: /tmp/trigger_file.txt
+      register: trigger_file
+
     - name: Run the trigger PowerShell script
       ansible.windows.win_shell: |
         C:\Scripts\TriggerScript.ps1
       args:
         executable: powershell.exe
+      when: trigger_file.stat.exists
