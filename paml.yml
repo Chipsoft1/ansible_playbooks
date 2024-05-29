@@ -5,7 +5,7 @@
   tasks:
     - name: Run a PowerShell script from a specific location
       ansible.windows.win_shell: |
-        C:\Scripts\ExampleScriptAnsible.ps1
+        C:\Scripts\EpischeTekst.ps1
       args:
         executable: powershell.exe
       register: script_output
