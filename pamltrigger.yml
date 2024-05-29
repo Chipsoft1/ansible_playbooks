@@ -1,0 +1,38 @@
+---
+- name: Execute trigger PowerShell script on Windows host
+  hosts: windows
+  gather_facts: false
+  tasks:
+    - name: Check for output-ansible.txt file
+      ansible.windows.win_stat:
+        path: C:\Scripts\output-ansible.txt
+      register: output_file
+
+    - name: Debug output file status
+      debug:
+        var: output_file
+
+    - name: Run the trigger PowerShell script
+      ansible.windows.win_shell: |
+        C:\Scripts\EpischeTrigger.ps1
+      args:
+        executable: powershell.exe
+      when: output_file.stat.exists
+
+    - name: Check for TriggerOutput.txt file
+      ansible.windows.win_stat:
+        path: C:\Scripts\TriggerOutput.txt
+      register: trigger_output_file
+
+    - name: Debug TriggerOutput.txt file status
+      debug:
+        var: trigger_output_file
+
+    - name: Check TriggerScript log
+      ansible.windows.win_shell: |
+        Get-Content -Path C:\Scripts\EpischeTriggerScript.log
+      register: trigger_log
+
+    - name: Debug TriggerScript log
+      debug:
+        var: trigger_log.stdout_lines
