@@ -4,7 +4,7 @@
   tasks:
     - name: Run PowerShell script
       win_shell: |
-        powershell.exe -File C:\Scripts\EpischeTekst.ps1 -klantcode "{{ klantcode }}"
+        powershell.exe -File C:\Scripts\EpischeTekst.ps1 -tekst "{{ tekst }}"
       args:
         executable: cmd
       register: ps_output
