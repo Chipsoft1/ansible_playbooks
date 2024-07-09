@@ -1,5 +1,5 @@
 - name: Test connectivity to Windows node
-  hosts: 20.160.170.4
+  hosts: windows
   tasks:
     - name: Check the time on the Windows node
       win_command: 'echo %TIME%'
