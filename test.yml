@@ -2,4 +2,4 @@
   hosts: windows
   tasks:
     - name: Check the time on the Windows node
-      win_command: 'echo %TIME%'
+      win_shell: 'echo %TIME%'
