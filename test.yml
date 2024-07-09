@@ -3,3 +3,8 @@
   tasks:
     - name: Check the time on the Windows node
       win_shell: 'echo %TIME%'
+      register: time_output
+
+    - name: Display the time on the Windows node
+      debug:
+        var: time_output.stdout
