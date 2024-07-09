@@ -1,8 +1,8 @@
 - name: Test connectivity to Windows node
   hosts: windows
   tasks:
-    - name: Check the time on the Windows node
-      win_shell: 'echo %TIME%'
+    - name: Check the time on the Windows node using PowerShell
+      win_shell: 'powershell.exe -Command "Get-Date -Format HH:mm:ss"'
       register: time_output
 
     - name: Display the time on the Windows node
