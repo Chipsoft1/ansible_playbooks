@@ -1,6 +1,6 @@
 ---
 - name: Test connectivity to Windows node
-  hosts: windows_node
+  hosts: windows
   tasks:
     - name: Ping the Windows node
       win_ping:
