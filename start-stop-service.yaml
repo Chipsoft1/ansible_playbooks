@@ -1,0 +1,41 @@
+---
+- name: Restart Service on Windows Server
+  hosts: windows
+  vars:
+    servername: "tka01.hix365.com"
+    username: "sa_hixupdater"
+    secure_password: "cc258062FDA99e76c!d950b2d8c13@@5"
+    service_name: "*H365 Basic Comez*"
+    environment: "TEST"
+    service_status: "Running"
+    action: "Restart"
+
+  tasks:
+    - name: Set up WinRM connection
+      win_ping:
+
+    - name: Restart the specified service if it is running
+      win_service:
+        name: "{{ service_name }}"
+        state: restarted
+      when: 
+        - ansible_facts.ansible_hostname == servername
+        - ansible_facts.services | selectattr('name', 'match', service_name) | selectattr('status', 'match', service_status) | list | length > 0
+
+    - name: Restart the specified service on remote server
+      win_shell: |
+        $Credential = New-Object System.Management.Automation.PSCredential ("{{ username }}", (ConvertTo-SecureString "{{ secure_password }}" -AsPlainText -Force))
+        $ServiceName = "{{ service_name }}"
+        $Environment = "{{ environment }}"
+        $ServiceStatus = "{{ service_status }}"
+        $Action = "{{ action }}-Service"
+        Do {
+            $Service = Get-Service -Name $ServiceName | Where-Object {$_.Status -eq "$ServiceStatus" -AND $_.Name -like "*$Environment*" -AND $_.StartType -ne "Disabled"}
+            $Service | & $Action -Verbose
+            Start-Sleep -Seconds 2
+        } Until ($Service -eq $Null)
+      args:
+        executable: powershell.exe
+      when: 
+        - ansible_facts.ansible_hostname != servername
+        - ansible_facts.services | selectattr('name', 'match', service_name) | selectattr('status', 'match', service_status) | list | length > 0
