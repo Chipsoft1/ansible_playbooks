@@ -24,10 +24,15 @@
       debug:
         var: service_info_raw.stdout
 
+    - name: Ensure service information is not empty
+      fail:
+        msg: "No service information retrieved. Please check the service name pattern."
+      when: service_info_raw.stdout | trim == ''
+
     - name: Parse service information
       set_fact:
         services: "{{ service_info_raw.stdout | from_json }}"
-      when: service_info_raw.stdout is not none and service_info_raw.stdout != ''
+      when: service_info_raw.stdout is not none and service_info_raw.stdout | trim != ''
 
     - name: Show parsed service information
       debug:
