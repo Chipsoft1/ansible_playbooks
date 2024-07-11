@@ -20,14 +20,23 @@
         Get-Service -Name "{{ service_name }}" | Select-Object Name, Status, StartType | ConvertTo-Json
       register: service_info_raw
 
+    - name: Show raw service information
+      debug:
+        var: service_info_raw.stdout
+
     - name: Parse service information
       set_fact:
         services: "{{ service_info_raw.stdout | from_json }}"
+      when: service_info_raw.stdout is not none and service_info_raw.stdout != ''
+
+    - name: Show parsed service information
+      debug:
+        var: services
 
     - name: Check if the service is running on the local server
       set_fact:
         service_is_running: "{{ services | selectattr('Status', 'equalto', service_status) | list | length > 0 }}"
-      when: ansible_hostname == servername
+      when: ansible_hostname == servername and services is defined
 
     - name: Restart the specified service if it is running on the local server
       win_service:
@@ -53,4 +62,4 @@
         executable: powershell.exe
       when: 
         - ansible_hostname != servername
-        - services | selectattr('Status', 'equalto', service_status) | list | length > 0
+        - services is defined and services | selectattr('Status', 'equalto', service_status) | list | length > 0
