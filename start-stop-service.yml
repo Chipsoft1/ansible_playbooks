@@ -16,9 +16,14 @@
       win_ping:
 
     - name: Gather service information
-      win_service_info:
-        name: "{{ service_name }}"
+      win_shell: |
+        Get-Service -Name "{{ service_name }}" | Select-Object Name, Status, StartType
       register: service_info
+
+    - name: Check if the service is running on the local server
+      set_fact:
+        service_is_running: "{{ service_info.stdout | from_json | selectattr('Status', 'match', service_status) | list | length > 0 }}"
+      when: ansible_hostname == servername
 
     - name: Restart the specified service if it is running on the local server
       win_service:
@@ -26,7 +31,7 @@
         state: restarted
       when: 
         - ansible_hostname == servername
-        - service_info.services | selectattr('status', 'match', service_status) | list | length > 0
+        - service_is_running
 
     - name: Restart the specified service on remote server
       win_shell: |
@@ -42,6 +47,10 @@
         } Until ($Service -eq $Null)
       args:
         executable: powershell.exe
+      when: 
+        - ansible_hostname != servername
+        - service_info.stdout | from_json | selectattr('Status', 'match', service_status) | list | length > 0
+
       when: 
         - ansible_hostname != servername
         - service_info.services | selectattr('status', 'match', service_status) | list | length > 0
