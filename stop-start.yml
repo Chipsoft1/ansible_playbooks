@@ -3,8 +3,8 @@
   hosts: windows
   gather_facts: no
   vars:
-    script_source: "C:\Users\beheerder\Desktop\Scripts" 
-    script_destination: "C:\Users\beheerder\Desktop\Scripts"
+    script_source: "C:\\Users\\beheerder\\Desktop\\Scripts\\Do-Service-Restart.ps1"
+    script_destination: "C:\\temp\\Do-Service-Restart.ps1"
 
   tasks:
     - name: Ensure temp directory exists
