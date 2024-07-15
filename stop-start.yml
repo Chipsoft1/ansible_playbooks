@@ -3,8 +3,7 @@
   hosts: windows
   gather_facts: no
   vars:
-    script_path: "C:\\Users\\beheerder\\Desktop\\Scripts\\Do-Service-Restart.ps1"  # Pas dit pad aan indien nodig
-
+    script_path: "C:\\Users\\beheerder\\Desktop\\Scripts\\Do-Service-Restart.ps1"  
   tasks:
     - name: Run PowerShell script
       win_shell: |
