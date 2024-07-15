@@ -3,23 +3,12 @@
   hosts: windows
   gather_facts: no
   vars:
-    script_source: "C:\\Users\\beheerder\\Desktop\\Scripts\\Do-Service-Restart.ps1"
-    script_destination: "C:\\Users\\beheerder\\Desktop\\Scripts\\Do-Service-Restart.ps1"
+    script_path: "C:\\Users\\beheerder\\Desktop\\Scripts\\Do-Service-Restart.ps1"  # Pas dit pad aan indien nodig
 
   tasks:
-    - name: Ensure temp directory exists
-      win_file:
-        path: C:\temp
-        state: directory
-
-    - name: Copy PowerShell script to Windows Server
-      win_copy:
-        src: "{{ script_source }}"
-        dest: "{{ script_destination }}"
-
     - name: Run PowerShell script
       win_shell: |
-        PowerShell.exe -ExecutionPolicy Bypass -File "{{ script_destination }}"
+        PowerShell.exe -ExecutionPolicy Bypass -File "{{ script_path }}"
       register: script_output
 
     - name: Show script output
