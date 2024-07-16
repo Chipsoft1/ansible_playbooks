@@ -3,7 +3,7 @@
   hosts: windows
   gather_facts: no
   vars:
-    script_path: "C:\Scripts"  
+    script_path: "C:\\Scripts"  
   tasks:
     - name: Run PowerShell script
       win_shell: |
