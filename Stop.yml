@@ -1,10 +1,24 @@
-- name: Test connectivity to Windows node
+---
+- name: Run PowerShell Script on Windows Server
   hosts: windows
+  gather_facts: no
+  vars:
+    script_path: "C:\\Scripts\\StopScript.ps1"  
   tasks:
-    - name: Check the time on the Windows node using PowerShell
-      win_shell: 'powershell.exe -Command "Get-Date -Format HH:mm:ss"'
-      register: time_output
+    - name: Run PowerShell script
+      win_shell: |
+        try {
+          PowerShell.exe -ExecutionPolicy Bypass -File "{{ script_path }}"
+        }
+        catch {
+          Write-Error $_
+        }
+      register: script_output
 
-    - name: Display the time on the Windows node
+    - name: Show script stdout
       debug:
-        var: time_output.stdout
+        var: script_output.stdout
+
+    - name: Show script stderr
+      debug:
+        var: script_output.stderr
