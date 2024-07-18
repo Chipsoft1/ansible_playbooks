@@ -1,0 +1,24 @@
+---
+- name: Run PowerShell Script on Windows Server
+  hosts: windows
+  gather_facts: no
+  vars:
+    script_path: "C:\\Scripts\\StartScript.ps1"  
+  tasks:
+    - name: Run PowerShell script
+      win_shell: |
+        try {
+          PowerShell.exe -ExecutionPolicy Bypass -File "{{ script_path }}"
+        }
+        catch {
+          Write-Error $_
+        }
+      register: script_output
+
+    - name: Show script stdout
+      debug:
+        var: script_output.stdout
+
+    - name: Show script stderr
+      debug:
+        var: script_output.stderr
