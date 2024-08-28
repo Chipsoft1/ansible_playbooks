@@ -1,55 +1,7 @@
 ---
-- name: Configure FortiWeb Firewall
-  hosts: fortiweb
-  gather_facts: no
+- name: Configure FortiGate with PowerFGT
+  hosts: fortigate_server
   tasks:
-
-    - name: Login to FortiWeb (if needed)
-      uri:
-        url: "https://{{ inventory_hostname }}/api/v2/login"
-        method: POST
-        body: 
-          username: "{{ fortiweb_user }}"
-          password: "{{ fortiweb_password }}"
-        body_format: json
-        headers:
-          Content-Type: "application/json"
-        validate_certs: no
-      register: login_response
-
-    - name: Edit zaas-external Server Policy
-      uri:
-        url: "https://{{ inventory_hostname }}/api/v2.0/server-policy/zaas-external"
-        method: PUT
-        headers:
-          Authorization: "Bearer {{ login_response.json.token }}"
-          Content-Type: "application/json"
-        body: 
-          # Voeg hier de configuratie-instellingen toe zoals vereist
-        body_format: json
-        validate_certs: no
-
-    - name: Edit hix365-basic-prod Server Policy
-      uri:
-        url: "https://{{ inventory_hostname }}/api/v2.0/server-policy/hix365-basic-prod"
-        method: PUT
-        headers:
-          Authorization: "Bearer {{ login_response.json.token }}"
-          Content-Type: "application/json"
-        body: 
-          http_content_routing_policy:
-            - create_new:
-                url: "{{ customer_url }}"
-                http_host:
-                  is_equal_to: "{{ customer_url }}"
-                action: OR
-        body_format: json
-        validate_certs: no
-
-    - name: Confirm and Apply Changes
-      uri:
-        url: "https://{{ inventory_hostname }}/api/v2.0/apply-changes"
-        method: POST
-        headers:
-          Authorization: "Bearer {{ login_response.json.token }}"
-        validate_certs: no
+    - name: Run PowerShell script to configure FortiGate
+      ansible.windows.win_shell: |
+        PowerShell.exe -ExecutionPolicy Bypass -File "C:\path\to\Configure-FortiGate.ps1" -Server "{{ server }}" -Username "{{ username }}" -Password "{{ password }}" -GroupName "{{ group_name }}" -Member1 "{{ member1 }}" -Member2 "{{ member2 }}" -Interface "{{ interface }}" -IPAddress "{{ ip_address }}" -Netmask "{{ netmask }}" -Comment "{{ comment }}"
