@@ -9,25 +9,25 @@
 
   - name: Create resource group
     azure_rm_resourcegroup:
-      name: myResourceGroup
+      name: Test_Group
       location: eastus
 
   - name: Create virtual network
     azure_rm_virtualnetwork:
-      resource_group: myResourceGroup
+      resource_group: Test_Group
       name: vNet
       address_prefixes: "10.0.0.0/16"
 
   - name: Add subnet
     azure_rm_subnet:
-      resource_group: myResourceGroup
+      resource_group: Test_Group
       name: subnet
       address_prefix: "10.0.1.0/24"
       virtual_network: vNet
 
   - name: Create public IP address
     azure_rm_publicipaddress:
-      resource_group: myResourceGroup
+      resource_group: Test_Group
       allocation_method: Static
       name: pip
     register: output_ip_address
@@ -38,7 +38,7 @@
   
   - name: Create Network Security Group
     azure_rm_securitygroup:
-      resource_group: myResourceGroup
+      resource_group: Test_Group
       name: networkSecurityGroup
       rules:
         - name: 'allow_rdp'
@@ -67,7 +67,7 @@
   - name: Create a network interface
     azure_rm_networkinterface:
       name: nic
-      resource_group: myResourceGroup
+      resource_group: Test_Group
       virtual_network: vNet
       subnet_name: subnet
       security_group: networkSecurityGroup
@@ -78,7 +78,7 @@
 
   - name: Create VM
     azure_rm_virtualmachine:
-      resource_group: myResourceGroup
+      resource_group: Test_Group
       name: win-vm
       vm_size: Standard_DS1_v2
       admin_username: azureuser
@@ -95,7 +95,7 @@
   - name: Create VM script extension to enable HTTPS WinRM listener
     azure_rm_virtualmachineextension:
       name: winrm-extension
-      resource_group: myResourceGroup
+      resource_group: Test_Group
       virtual_machine_name: win-vm
       publisher: Microsoft.Compute
       virtual_machine_extension_type: CustomScriptExtension
