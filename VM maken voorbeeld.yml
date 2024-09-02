@@ -6,7 +6,7 @@
     admin_username: beheerder
     admin_password: "{{ M@sterY0d@123! }}"
     network_interfaces: 
-      - name: hix365-hub-vnet  # Ensure this NIC exists or adjust as needed
+      - name: hix365-hub-vnet
     os_type: Windows
     image:
       offer: WindowsServer
