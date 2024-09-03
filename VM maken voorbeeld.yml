@@ -1,3 +1,4 @@
+---
 - name: Create VM
   azure_rm_virtualmachine:
     resource_group: automation-rg
