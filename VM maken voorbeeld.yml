@@ -1,7 +1,7 @@
 ---
 - name: Deploy Azure Windows VM
   hosts: windows
-  connection: local
+  connection: winrm
   gather_facts: no
   vars:
     azure_credentials:
