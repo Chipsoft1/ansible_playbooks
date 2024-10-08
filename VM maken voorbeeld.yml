@@ -1,55 +1,20 @@
----
-- name: Deploy Azure Windows VM
-  hosts: windows
-  connection: winrm
-  gather_facts: no
-  vars:
-    azure_credentials:
-      client_id: "<your-client-id>"
-      secret: "<your-client-secret>"
-      tenant: "<your-tenant-id>"
-      subscription_id: "<your-subscription-id>"
-    vm_parameters:
-      resource_group: "automation-rg"
-      vm_name: "winTest-vm"
-      vm_size: "Standard_DS1_v2"
-      admin_username: "beheerder"
-      admin_password: "{{ admin_password }}"
-      network_interface_name: "hix365-hub-vnet"
-      os_type: "Windows"
-      image:
-        offer: "WindowsServer"
-        publisher: "MicrosoftWindowsServer"
-        sku: "2019-Datacenter"
-        version: "latest"
-  vars_prompt:
-    - name: "admin_password"
-      prompt: "Enter the admin password for the VM"
-      private: yes
-  tasks:
-    - name: Authenticate with Azure
-      azure_rm_virtualmachine:
-        client_id: "{{ azure_credentials.client_id }}"
-        secret: "{{ azure_credentials.secret }}"
-        tenant: "{{ azure_credentials.tenant }}"
-        subscription_id: "{{ azure_credentials.subscription_id }}"
-        state: present
-        resource_group: "{{ vm_parameters.resource_group }}"
-        name: "{{ vm_parameters.vm_name }}"
-        vm_size: "{{ vm_parameters.vm_size }}"
-        admin_username: "{{ vm_parameters.admin_username }}"
-        admin_password: "{{ admin_password }}"
-        network_interfaces:
-          - name: "{{ vm_parameters.network_interface_name }}"
-        os_type: "{{ vm_parameters.os_type }}"
-        image:
-          offer: "{{ vm_parameters.image.offer }}"
-          publisher: "{{ vm_parameters.image.publisher }}"
-          sku: "{{ vm_parameters.image.sku }}"
-          version: "{{ vm_parameters.image.version }}"
-      register: vm_result
-      no_log: true
-
-    - name: Show VM deployment result
-      debug:
-        var: vm_result
+- name: Authenticate with Azure
+  azure.azcollection.azure_rm_virtualmachine:
+    client_id: "{{ azure_credentials.client_id }}"
+    secret: "{{ azure_credentials.secret }}"
+    tenant: "{{ azure_credentials.tenant }}"
+    subscription_id: "{{ azure_credentials.subscription_id }}"
+    state: present
+    resource_group: "{{ vm_parameters.resource_group }}"
+    name: "{{ vm_parameters.vm_name }}"
+    vm_size: "{{ vm_parameters.vm_size }}"
+    admin_username: "{{ vm_parameters.admin_username }}"
+    admin_password: "{{ admin_password }}"
+    network_interfaces:
+      - name: "{{ vm_parameters.network_interface_name }}"
+    os_type: "{{ vm_parameters.os_type }}"
+    image:
+      offer: "{{ vm_parameters.image.offer }}"
+      publisher: "{{ vm_parameters.image.publisher }}"
+      sku: "{{ vm_parameters.image.sku }}"
+      version: "{{ vm_parameters.image.version }}"
