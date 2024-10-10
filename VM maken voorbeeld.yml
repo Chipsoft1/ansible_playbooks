@@ -31,10 +31,9 @@
   tasks:
 
     - name: Create resource group if not exists
-  azure.azcollection.azure_rm_resourcegroup:
-    name: "{{ vm_parameters.resource_group }}"
-    location: "westeurope"
-
+      azure.azcollection.azure_rm_resourcegroup:
+        name: "{{ vm_parameters.resource_group }}"
+        location: "westeurope"
 
     - name: Create an availability set
       azure.azcollection.azure_rm_availabilityset:
@@ -87,3 +86,4 @@
     - name: Show VM deployment result
       debug:
         var: vm_result
+
