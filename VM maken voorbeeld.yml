@@ -86,4 +86,3 @@
     - name: Show VM deployment result
       debug:
         var: vm_result
-
