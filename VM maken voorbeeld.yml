@@ -31,10 +31,10 @@
   tasks:
 
     - name: Create resource group if not exists
-      azure.azcollection.azure_rm_resourcegroup:
-        name: "{{ vm_parameters.resource_group }}"
-        location: "westeurope"
-      register: rg
+  azure.azcollection.azure_rm_resourcegroup:
+    name: "{{ vm_parameters.resource_group }}"
+    location: "westeurope"
+
 
     - name: Create an availability set
       azure.azcollection.azure_rm_availabilityset:
