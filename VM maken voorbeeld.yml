@@ -18,7 +18,7 @@
       network_interface_name: "{{ network_interface_name }}"
       os_type: "{{ os_type }}"
      # availability_set: "winTest-avail-set"  # Toevoegen van een availability set
-      managed_disk_type: "{{ managed_disk_type }}"      # Gebruik van managed disk
+     # managed_disk_type: "{{ managed_disk_type }}"      # Gebruik van managed disk
       image:
         offer: "{{ offer }}"
         publisher: "{{ publisher }}"
@@ -40,7 +40,7 @@
         admin_username: "{{ vm_parameters.admin_username }}"
         admin_password: "{{ admin_password }}"
       #  availability_set: "{{ vm_parameters.availability_set }}"  # Voeg availability set toe
-        managed_disk_type: "{{ vm_parameters.managed_disk_type }}"  # Gebruik managed disk
+      #  managed_disk_type: "{{ vm_parameters.managed_disk_type }}"  # Gebruik managed disk
         network_interfaces:
           - name: "{{ vm_parameters.network_interface_name }}"
         os_type: "{{ vm_parameters.os_type }}"
