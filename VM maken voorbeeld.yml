@@ -1,59 +1,24 @@
 ---
-- name: Deploy Azure Windows VM with additional features
+- name: Create Azure VM
   hosts: localhost
-  collections:
-    - azure.azcollection.azure_rm_virtualmachine
   connection: local
-  gather_facts: no
-  vars:
-    azure_credentials:
-      client_id: "<your-client-id>"
-      secret: "<your-client-secret>"
-      tenant: "<your-tenant-id>"
-      subscription_id: "<your-subscription-id>"
-    vm_parameters:
-      resource_group: "{{ resource_group }}"
-      vm_name: "{{ vm_name }}"
-      vm_size: "{{ vm_size }}"
-      admin_username: "{{ admin_username}}"
-      admin_password: "{{ admin_password }}"
-      network_interface_name: "{{ network_interface_name }}"
-      os_type: "{{ os_type }}"
-     # availability_set: "winTest-avail-set"  # Toevoegen van een availability set
-     # managed_disk_type: "{{ managed_disk_type }}"      # Gebruik van managed disk
-      image:
-        offer: "{{ offer }}"
-        publisher: "{{ publisher }}"
-        sku: "{{ sku }}"
-        version: "{{ version }}"
-
+  vars_prompt:
+    - name: password
+      prompt: "Welkom123"
   tasks:
-
-    - name: Authenticate and create VM with managed disk and availability set
-      azure.azcollection.azure_rm_virtualmachine:
-        client_id: "{{ azure_credentials.client_id }}"
-        secret: "{{ azure_credentials.secret }}"
-        tenant: "{{ azure_credentials.tenant }}"
-        subscription_id: "{{ azure_credentials.subscription_id }}"
-        state: present
-        resource_group: "{{ vm_parameters.resource_group }}"
-        name: "{{ vm_parameters.vm_name }}"
-        vm_size: "{{ vm_parameters.vm_size }}"
-        admin_username: "{{ vm_parameters.admin_username }}"
-        admin_password: "{{ admin_password }}"
-      #  availability_set: "{{ vm_parameters.availability_set }}"  # Voeg availability set toe
-      #  managed_disk_type: "{{ vm_parameters.managed_disk_type }}"  # Gebruik managed disk
-        network_interfaces:
-          - name: "{{ vm_parameters.network_interface_name }}"
-        os_type: "{{ vm_parameters.os_type }}"
-        image:
-          offer: "{{ vm_parameters.image.offer }}"
-          publisher: "{{ vm_parameters.image.publisher }}"
-          sku: "{{ vm_parameters.image.sku }}"
-          version: "{{ vm_parameters.image.version }}"
-      register: vm_result
-      no_log: true
-
-    - name: Show VM deployment result
-      debug:
-        var: vm_result
+  
+- name: Create VM
+    azure_rm_virtualmachine:
+      resource_group: myResourceGroup
+      name: win-vm
+      vm_size: Standard_DS1_v2
+      admin_username: azureuser
+      admin_password: "{{ password }}"
+      network_interfaces: nic
+      os_type: Windows
+      image:
+          offer: WindowsServer
+          publisher: MicrosoftWindowsServer
+          sku: 2019-Datacenter
+          version: latest
+    no_log: true
