@@ -10,24 +10,21 @@
       tenant: "<your-tenant-id>"
       subscription_id: "<your-subscription-id>"
     vm_parameters:
-      resource_group: "automation-rg"
-      vm_name: "winTest-vm"
-      vm_size: "Standard_DS1_v2"
-      admin_username: "beheerder"
+      resource_group: "{{ resource_group }}"
+      vm_name: "{{ vm_name }}"
+      vm_size: "{{ vm_size }}"
+      admin_username: "{{ admin_username}}"
       admin_password: "{{ admin_password }}"
-      network_interface_name: "hix365-hub-vnet"
-      os_type: "Windows"
-      availability_set: "winTest-avail-set"  # Toevoegen van een availability set
-      managed_disk_type: "Standard_LRS"      # Gebruik van managed disk
+      network_interface_name: "{{ network_interface_name }}"
+      os_type: "{{ os_type }}"
+     # availability_set: "winTest-avail-set"  # Toevoegen van een availability set
+      managed_disk_type: "{{ managed_disk_type }}"      # Gebruik van managed disk
       image:
-        offer: "WindowsServer"
-        publisher: "MicrosoftWindowsServer"
-        sku: "2019-Datacenter"
-        version: "latest"
-  vars_prompt:
-    - name: "admin_password"
-      prompt: "Enter the admin password for the VM"
-      private: yes
+        offer: "{{ offer }}"
+        publisher: "{{ publisher }}"
+        sku: "{{ sku }}"
+        version: "{{ version }}"
+
   tasks:
 
     - name: Authenticate and create VM with managed disk and availability set
@@ -42,7 +39,7 @@
         vm_size: "{{ vm_parameters.vm_size }}"
         admin_username: "{{ vm_parameters.admin_username }}"
         admin_password: "{{ admin_password }}"
-        availability_set: "{{ vm_parameters.availability_set }}"  # Voeg availability set toe
+      #  availability_set: "{{ vm_parameters.availability_set }}"  # Voeg availability set toe
         managed_disk_type: "{{ vm_parameters.managed_disk_type }}"  # Gebruik managed disk
         network_interfaces:
           - name: "{{ vm_parameters.network_interface_name }}"
@@ -54,16 +51,6 @@
           version: "{{ vm_parameters.image.version }}"
       register: vm_result
       no_log: true
-
-    - name: Enable boot diagnostics
-      azure.azcollection.azure_rm_virtualmachine:
-        resource_group: "{{ vm_parameters.resource_group }}"
-        name: "{{ vm_parameters.vm_name }}"
-        boot_diagnostics:
-          enabled: true
-          storage_uri: "https://<your_storage_account>.blob.core.windows.net/"
-      register: boot_diagnostics_result
-
 
     - name: Show VM deployment result
       debug:
