@@ -1,6 +1,8 @@
 ---
 - name: Deploy Azure Windows VM with additional features
   hosts: localhost
+  collections:
+    - azure.azcollection.azure_rm_virtualmachine
   connection: local
   gather_facts: no
   vars:
