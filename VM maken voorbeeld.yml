@@ -4,21 +4,21 @@
   connection: local
   vars_prompt:
     - name: password
-      prompt: "Welkom123"
+      prompt: "Voer uw wachtwoord in"  # Correcte prompt configuratie
+      private: yes  # Verbergt het wachtwoord bij invoer
   tasks:
-  
-- name: Create VM
-    azure_rm_virtualmachine:
-      resource_group: myResourceGroup
-      name: win-vm
-      vm_size: Standard_DS1_v2
-      admin_username: azureuser
-      admin_password: "{{ password }}"
-      network_interfaces: nic
-      os_type: Windows
-      image:
+    - name: Create VM
+      azure_rm_virtualmachine:
+        resource_group: myResourceGroup
+        name: win-vm
+        vm_size: Standard_DS1_v2
+        admin_username: azureuser
+        admin_password: "{{ password }}"
+        network_interfaces: nic
+        os_type: Windows
+        image:
           offer: WindowsServer
           publisher: MicrosoftWindowsServer
           sku: 2019-Datacenter
           version: latest
-    no_log: true
+      no_log: true
