@@ -1,3 +1,4 @@
+---
 - name: Create a VM with managed disk
   azure_rm_virtualmachine:
     resource_group: myResourceGroup
