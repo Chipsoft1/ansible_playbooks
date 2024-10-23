@@ -1,24 +1,100 @@
 ---
-- name: Create Azure VM
+- name: Create Azure VM with Variables
   hosts: localhost
-  connection: local
-  vars_prompt:
-    - name: password
-      prompt: "Voer uw wachtwoord in"  # Correcte prompt configuratie
-      private: yes  # Verbergt het wachtwoord bij invoer
+  vars:
+    resource_group: "{{ resource_group | default('automation-deploy-rg') }}"
+    virtual_network_name: "{{ virtual_network_name | default('vNet') }}"
+    subnet_name: "{{ subnet_name | default('subnet') }}"
+    public_ip_name: "{{ public_ip_name | default('pip') }}"
+    vm_name: "{{ vm_name | default('win-vm') }}"
+    vm_size: "{{ vm_size | default('Standard_DS1_v2') }}"
+    admin_username: "{{ admin_username | default('azureuser') }}"
+    admin_password: "{{ admin_password | default('Welkom01!') }}"
+    image_offer: "{{ image_offer | default('WindowsServer') }}"
+    image_publisher: "{{ image_publisher | default('MicrosoftWindowsServer') }}"
+    image_sku: "{{ image_sku | default('2019-Datacenter') }}"
+    image_version: "{{ image_version | default('latest') }}"
+    security_group_name: "{{ security_group_name | default('automation-deploy-rg-networkSecurityGroup') }}"
+    address_prefixes: "{{ address_prefixes | default('10.0.0.0/16') }}"
+    subnet_address_prefix: "{{ subnet_address_prefix | default('10.0.1.0/24') }}"
+  
   tasks:
+    - name: Create virtual network
+      azure.azcollection.azure_rm_virtualnetwork:
+        resource_group: "{{ resource_group }}"
+        name: "{{ virtual_network_name }}"
+        address_prefixes: "{{ address_prefixes }}"
+
+    - name: Add subnet
+      azure.azcollection.azure_rm_subnet:
+        resource_group: "{{ resource_group }}"
+        name: "{{ subnet_name }}"
+        address_prefix: "{{ subnet_address_prefix }}"
+        virtual_network: "{{ virtual_network_name }}"
+
+    - name: Create public IP address
+      azure.azcollection.azure_rm_publicipaddress:
+        resource_group: "{{ resource_group }}"
+        allocation_method: Static
+        name: "{{ public_ip_name }}"
+      register: output_ip_address
+
+    - name: Output public IP
+      debug:
+        msg: "The public IP is {{ output_ip_address.state.ip_address }}"
+
+    - name: Create Network Security Group
+      azure.azcollection.azure_rm_securitygroup:
+        resource_group: "{{ resource_group }}"
+        name: "{{ security_group_name }}"
+        rules:
+          - name: 'allow_rdp'
+            protocol: Tcp
+            destination_port_range: 3389
+            access: Allow
+            priority: 1001
+            direction: Inbound
+          - name: 'allow_web_traffic'
+            protocol: Tcp
+            destination_port_range:
+              - 80
+              - 443
+            access: Allow
+            priority: 1002
+            direction: Inbound
+          - name: 'allow_powershell_remoting'
+            protocol: Tcp
+            destination_port_range: 
+              - 5985
+              - 5986
+            access: Allow
+            priority: 1003
+            direction: Inbound
+
+    - name: Create a network interface
+      azure.azcollection.azure_rm_networkinterface:
+        name: nic
+        resource_group: "{{ resource_group }}"
+        virtual_network: "{{ virtual_network_name }}"
+        subnet_name: "{{ subnet_name }}"
+        security_group: "{{ security_group_name }}"
+        ip_configurations:
+          - name: default
+            public_ip_address_name: "{{ public_ip_name }}"
+            primary: True
+
     - name: Create VM
-      azure_rm_virtualmachine:
-        resource_group: myResourceGroup
-        name: win-vm
-        vm_size: Standard_DS1_v2
-        admin_username: azureuser
-        admin_password: "{{ password }}"
+      azure.azcollection.azure_rm_virtualmachine:
+        resource_group: "{{ resource_group }}"
+        name: "{{ vm_name }}"
+        vm_size: "{{ vm_size }}"
+        admin_username: "{{ admin_username }}"
+        admin_password: "{{ admin_password }}"
         network_interfaces: nic
         os_type: Windows
         image:
-          offer: WindowsServer
-          publisher: MicrosoftWindowsServer
-          sku: 2019-Datacenter
-          version: latest
-      no_log: true
+          offer: "{{ image_offer }}"
+          publisher: "{{ image_publisher }}"
+          sku: "{{ image_sku }}"
+          version: "{{ image_version }}"
+      no_log: false
