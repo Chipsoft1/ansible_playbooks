@@ -1,23 +1,5 @@
 - name: Create Azure VM with Variables and Run a Script
   hosts: localhost
-  vars:
-    resource_group: '{{ resource_group | default(''automation-deploy-rg'') }}'
-    virtual_network_name: '{{ virtual_network_name | default(''vNet'') }}'
-    subnet_name: '{{ subnet_name | default(''subnet'') }}'
-    public_ip_name: '{{ public_ip_name | default(''pip'') }}'
-    vm_name: '{{ vm_name | default(''win-vm'') }}'
-    vm_size: '{{ vm_size | default(''Standard_DS1_v2'') }}'
-    admin_username: '{{ admin_username | default(''azureuser'') }}'
-    admin_password: '{{ admin_password | default(''Welkom01!'') }}'
-    image_offer: '{{ image_offer | default(''WindowsServer'') }}'
-    image_publisher: '{{ image_publisher | default(''MicrosoftWindowsServer'') }}'
-    image_sku: '{{ image_sku | default(''2019-Datacenter'') }}'
-    image_version: '{{ image_version | default(''latest'') }}'
-    security_group_name: >-
-      {{ security_group_name |
-      default('automation-deploy-rg-networkSecurityGroup') }}
-    address_prefixes: '{{ address_prefixes | default(''10.0.0.0/16'') }}'
-    subnet_address_prefix: '{{ subnet_address_prefix | default(''10.0.1.0/24'') }}'
   tasks:
     - name: Create virtual network
       azure.azcollection.azure_rm_virtualnetwork:
