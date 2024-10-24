@@ -99,11 +99,14 @@
           version: "{{ image_version }}"
       no_log: false
 
-    - name: Run PowerShell script on the VM to create a notepad file
-      azure.azcollection.azure_rm_virtualmachine_runcommand:
+    - name: Run PowerShell script on the VM to create a file with "het werkt"
+      azure.azcollection.azure_rm_virtualmachine_extension:
         resource_group: "{{ resource_group }}"
-        name: "{{ vm_name }}"
-        command_id: RunPowerShellScript
-        script: |
-          $path = "C:\Users\Public\Documents\resultaat.txt"
-          "het werkt" | Out-File -FilePath $path
+        vm_name: "{{ vm_name }}"
+        name: "RunPowerShellScript"
+        publisher: "Microsoft.Compute"
+        type: "CustomScriptExtension"
+        type_handler_version: "1.10"
+        settings: 
+          fileUris: []
+          commandToExecute: "powershell -ExecutionPolicy Unrestricted -Command \"'$path = 'C:\\Users\\Public\\Documents\\resultaat.txt'; 'het werkt' | Out-File -FilePath $path\""
