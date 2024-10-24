@@ -99,11 +99,4 @@
           version: "{{ image_version }}"
       no_log: false
 
-      - name: Assign AD role to the VM  
-        azure.azcollection.azure_rm_roleassignment:
-         resource_group: "{{ resource_group }}"
-         scope: "/subscriptions/{{ subscription_id }}/resourceGroups/{{ resource_group }}/providers/Microsoft.Compute/virtualMachines/{{ vm_name }}"
-         role_definition_name: "Virtual Machine Contributor"
-         principal_type: "ServicePrincipal"
-         principal_id: "{{ ad_service_principal_id }}"
 
