@@ -86,7 +86,7 @@
         publicipaddress: "{{ output_ip_address.state.ip_address }}"
 
 - name: Connect to VM and create a file
-  hosts: localhost
+  hosts: windows
   gather_facts: 'no'
   vars:
     ansible_host: '{{ hostvars["localhost"]["publicipaddress"] }}'
