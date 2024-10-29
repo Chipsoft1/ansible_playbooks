@@ -80,9 +80,10 @@
         name: '{{ public_ip_name }}'
       register: publicipaddresses
     - name: Set public IP address fact
-      set_fact: >-
-        publicipaddress="{{ publicipaddresses |
-        json_query('publicipaddresses[0].ip_address')}}"
+      set_fact:
+        publicipaddress: "{{ output_ip_address.state.ip_address }}"
+      cacheable: true  # Maakt variabele beschikbaar in volgende play
+
 - name: Connect to VM and create a file
   hosts: all
   gather_facts: 'no'
@@ -96,9 +97,6 @@
     ansible_winrm_server_cert_validation: ignore
   tasks:
     - name: Create a Notepad file with text "het werkt" on the VM
-      ansible.windows.win_shell: >
-        New-Item -Path C:\Users\{{ ansible_user }}\Desktop\ -Name "test.txt"
-        -ItemType "file" -Force
-
-        Add-Content -Path C:\Users\{{ ansible_user }}\Desktop\test.txt -Value
-        "het werkt"
+      ansible.windows.win_shell: |
+        New-Item -Path C:\Users\{{ ansible_user }}\Desktop\ -Name "test.txt" -ItemType "file" -Force
+        Add-Content -Path C:\Users\{{ ansible_user }}\Desktop\test.txt -Value "het werkt"
