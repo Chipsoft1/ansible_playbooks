@@ -82,13 +82,12 @@
     - name: Set public IP address fact
       set_fact:
         publicipaddress: "{{ output_ip_address.state.ip_address }}"
-      cacheable: true  # Maakt variabele beschikbaar in volgende play
 
 - name: Connect to VM and create a file
   hosts: all
   gather_facts: 'no'
   vars:
-    ansible_host: '{{ publicipaddress }}'
+    ansible_host: '{{ publicipaddress }}'  # Variabele uit vorige play doorgeven
     ansible_user: '{{ admin_username }}'
     ansible_password: '{{ admin_password }}'
     ansible_port: 5986
