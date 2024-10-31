@@ -27,7 +27,7 @@
 
     - name: Create Network Security Group
       azure.azcollection.azure_rm_securitygroup:
-        resource_group: '{{ resource_group }}'
+        resource_group: '{{ resource_group_name }}'
         name: '{{ security_group_name }}'
         rules:
           - name: allow_rdp
@@ -81,30 +81,46 @@
           version: '{{ image_version }}'
       no_log: false
 
-    - name: Enable WinRM on the new VM
-      azure.azcollection.azure_rm_virtualmachineextension:
+    # Enable WinRM - Step 1
+    - name: Enable WinRM on the new VM - Step 1
+      azure.azcollection.azure_rm_virtualmachine_extension:
         resource_group: '{{ resource_group }}'
         virtual_machine_name: '{{ vm_name }}'
-        name: 'enableWinRM'
-        publisher: Microsoft.Compute
-        virtual_machine_extension_type: CustomScriptExtension
-        type_handler_version: 1.10
-        settings: 
+        name: 'enableWinRMStep1'
+        publisher: 'Microsoft.Compute'
+        type: 'CustomScriptExtension'
+        type_handler_version: '1.10'
+        settings:
           commandToExecute: |
             powershell -ExecutionPolicy Unrestricted -Command "
-              # Configure WinRM to use HTTPS
               winrm quickconfig -force;
               winrm set winrm/config/service/auth '@{Basic=\"true\"}';
               winrm set winrm/config/service '@{AllowUnencrypted=\"true\"}';
+            "
+      register: winrm_extension_step1
+      retries: 3
+      delay: 15
+
+    # Enable WinRM - Step 2
+    - name: Enable WinRM on the new VM - Step 2 (HTTPS Listener and Firewall)
+      azure.azcollection.azure_rm_virtualmachine_extension:
+        resource_group: '{{ resource_group }}'
+        virtual_machine_name: '{{ vm_name }}'
+        name: 'enableWinRMStep2'
+        publisher: 'Microsoft.Compute'
+        type: 'CustomScriptExtension'
+        type_handler_version: '1.10'
+        settings:
+          commandToExecute: |
+            powershell -ExecutionPolicy Unrestricted -Command "
               if (-not (Get-Item -Path WSMan:\\localhost\\Listener | Where-Object { $_.Keys -eq 'Transport=HTTPS' })) {
                   $cert = New-SelfSignedCertificate -DnsName '{{ vm_name }}' -CertStoreLocation Cert:\\LocalMachine\\My;
                   New-Item -Path WSMan:\\localhost\\Listener -Transport HTTPS -Address * -CertificateThumbprint $cert.Thumbprint;
               }
-              # Open firewall ports for WinRM
               New-NetFirewallRule -DisplayName 'Allow WinRM HTTPS' -Direction Inbound -Protocol TCP -LocalPort 5986 -Action Allow;
               New-NetFirewallRule -DisplayName 'Allow WinRM HTTP' -Direction Inbound -Protocol TCP -LocalPort 5985 -Action Allow;
             "
-      register: winrm_extension
+      register: winrm_extension_step2
       retries: 3
       delay: 15
 
@@ -112,7 +128,7 @@
       set_fact:
         publicipaddress: "{{ output_ip_address.state.ip_address }}"
 
-- name: Connect to VM and create a Notepad file
+- name: Wait for WinRM and Connect to VM
   hosts: newhost
   gather_facts: no
   vars:
@@ -129,10 +145,11 @@
         host: '{{ publicipaddress }}'
         port: 5986
         delay: 10
-        timeout: 300
+        timeout: 600  # Timeout ingesteld op 10 minuten
       delegate_to: localhost
 
     - name: Create a Notepad file with text "het werkt" on the VM
       ansible.windows.win_shell: |
         New-Item -Path C:\Users\{{ ansible_user }}\Desktop\ -Name "test.txt" -ItemType "file" -Force
         Add-Content -Path C:\Users\{{ ansible_user }}\Desktop\test.txt -Value "het werkt"
+
