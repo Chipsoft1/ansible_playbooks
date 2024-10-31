@@ -118,7 +118,7 @@
   hosts: newhost
   gather_facts: no
   vars:
-    ansible_host: '{{ publicipaddress }}'
+    ansible_host: '{{ output_ip_address.state.ip_address }}'
     ansible_user: '{{ admin_username }}'
     ansible_password: '{{ admin_password }}'
     ansible_port: 5986
@@ -128,7 +128,7 @@
   tasks:
     - name: Wait for WinRM to be ready on the new VM
       ansible.builtin.wait_for:
-        host: '{{ publicipaddress }}'
+        host: '{{ output_ip_address.state.ip_address }}'
         port: 5986
         delay: 10
         timeout: 600  # Timeout ingesteld op 10 minuten
