@@ -27,7 +27,7 @@
 
     - name: Create Network Security Group
       azure.azcollection.azure_rm_securitygroup:
-        resource_group: '{{ resource_group_name }}'
+        resource_group: '{{ resource_group }}'
         name: '{{ security_group_name }}'
         rules:
           - name: allow_rdp
