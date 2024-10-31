@@ -82,7 +82,7 @@
       no_log: false
 
     - name: Enable WinRM on the new VM
-      azure.azcollection.azure_rm_virtualmachine_extension:
+      azure.azcollection.azure_rm_virtualmachineextension:
         resource_group: '{{ resource_group }}'
         vm_name: '{{ vm_name }}'
         name: 'enableWinRM'
