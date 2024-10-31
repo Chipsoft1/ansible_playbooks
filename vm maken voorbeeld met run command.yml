@@ -27,7 +27,7 @@
 
     - name: Create Network Security Group
       azure.azcollection.azure_rm_securitygroup:
-        resource_group: '{{ resource_group }}'
+        resource_group: '{{ resource_group_name }}'
         name: '{{ security_group_name }}'
         rules:
           - name: allow_rdp
@@ -79,24 +79,35 @@
           publisher: '{{ image_publisher }}'
           sku: '{{ image_sku }}'
           version: '{{ image_version }}'
+      register: vm_creation
       no_log: false
 
     - name: Set public IP address fact
       set_fact:
         publicipaddress: "{{ output_ip_address.state.ip_address }}"
 
+- name: Connect to the new Azure VM and create a Notepad file
+  hosts: localhost
+  tasks:
+    - name: Wait for WinRM to be ready on the new VM
+      ansible.builtin.wait_for:
+        host: '{{ publicipaddress }}'
+        port: 5986
+        delay: 10
+        timeout: 300
+      delegate_to: localhost
+
 - name: Connect to VM and create a file
   hosts: newhost
-  gather_facts: 'no'
+  gather_facts: no
   vars:
-    ansible_host: '{{ hostvars["localhost"]["publicipaddress"] }}'
+    ansible_host: '{{ publicipaddress }}'
     ansible_user: '{{ admin_username }}'
     ansible_password: '{{ admin_password }}'
     ansible_port: 5986
     ansible_connection: winrm
     ansible_winrm_transport: basic
     ansible_winrm_server_cert_validation: ignore
-    ansible_python_interpreter: /usr/bin/python3
   tasks:
     - name: Create a Notepad file with text "het werkt" on the VM
       ansible.windows.win_shell: |
