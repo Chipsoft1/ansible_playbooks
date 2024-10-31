@@ -83,7 +83,7 @@
 
     # Enable WinRM - Step 1
     - name: Enable WinRM on the new VM - Step 1
-      azure.azcollection.azure_rm_virtualmachine_extension:
+      azure.azcollection.azure_rm_virtualmachineextension:
         resource_group: '{{ resource_group }}'
         virtual_machine_name: '{{ vm_name }}'
         name: 'enableWinRMStep1'
@@ -103,7 +103,7 @@
 
     # Enable WinRM - Step 2
     - name: Enable WinRM on the new VM - Step 2 (HTTPS Listener and Firewall)
-      azure.azcollection.azure_rm_virtualmachine_extension:
+      azure.azcollection.azure_rm_virtualmachineextension:
         resource_group: '{{ resource_group }}'
         virtual_machine_name: '{{ vm_name }}'
         name: 'enableWinRMStep2'
