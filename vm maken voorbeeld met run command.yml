@@ -84,7 +84,7 @@
     - name: Enable WinRM on the new VM
       azure.azcollection.azure_rm_virtualmachineextension:
         resource_group: '{{ resource_group }}'
-        vm_name: '{{ vm_name }}'
+        virtual_machine_name: '{{ vm_name }}'
         name: 'enableWinRM'
         publisher: 'Microsoft.Compute'
         type: 'CustomScriptExtension'
