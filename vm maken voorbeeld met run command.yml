@@ -27,7 +27,7 @@
 
     - name: Create Network Security Group
       azure.azcollection.azure_rm_securitygroup:
-        resource_group: '{{ resource_group }}'
+        resource_group: '{{ resource_group_name }}'
         name: '{{ security_group_name }}'
         rules:
           - name: allow_rdp
@@ -82,17 +82,28 @@
       no_log: false
 
     - name: Enable WinRM on the new VM
-      azure.azcollection.azure_rm_virtualmachineextension:
+      azure.azcollection.azure_rm_virtualmachine_extension:
         resource_group: '{{ resource_group }}'
-        virtual_machine_name: '{{ vm_name }}'
+        vm_name: '{{ vm_name }}'
         name: 'enableWinRM'
         publisher: 'Microsoft.Compute'
         type: 'CustomScriptExtension'
         type_handler_version: '1.10'
-        settings: {
-          "fileUris": ["https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/quickstarts/microsoft.compute/vm-winrm-windows/EnableWinRM.ps1"],
-          "commandToExecute": "powershell -ExecutionPolicy Unrestricted -File EnableWinRM.ps1"
-        }
+        settings: 
+          commandToExecute: |
+            powershell -ExecutionPolicy Unrestricted -Command "
+              # Configure WinRM to use HTTPS
+              winrm quickconfig -force;
+              winrm set winrm/config/service/auth '@{Basic=\"true\"}';
+              winrm set winrm/config/service '@{AllowUnencrypted=\"true\"}';
+              if (-not (Get-Item -Path WSMan:\\localhost\\Listener | Where-Object { $_.Keys -eq 'Transport=HTTPS' })) {
+                  $cert = New-SelfSignedCertificate -DnsName '{{ vm_name }}' -CertStoreLocation Cert:\\LocalMachine\\My;
+                  New-Item -Path WSMan:\\localhost\\Listener -Transport HTTPS -Address * -CertificateThumbprint $cert.Thumbprint;
+              }
+              # Open firewall ports for WinRM
+              New-NetFirewallRule -DisplayName 'Allow WinRM HTTPS' -Direction Inbound -Protocol TCP -LocalPort 5986 -Action Allow;
+              New-NetFirewallRule -DisplayName 'Allow WinRM HTTP' -Direction Inbound -Protocol TCP -LocalPort 5985 -Action Allow;
+            "
       register: winrm_extension
       retries: 3
       delay: 15
