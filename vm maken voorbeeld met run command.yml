@@ -96,6 +96,7 @@
     ansible_connection: winrm
     ansible_winrm_transport: basic
     ansible_winrm_server_cert_validation: ignore
+    ansible_python_interpreter: /usr/bin/python3
   tasks:
     - name: Create a Notepad file with text "het werkt" on the VM
       ansible.windows.win_shell: |
