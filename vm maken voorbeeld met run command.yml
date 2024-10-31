@@ -86,9 +86,9 @@
         resource_group: '{{ resource_group }}'
         virtual_machine_name: '{{ vm_name }}'
         name: 'enableWinRM'
-        publisher: 'Microsoft.Compute'
-        virtual_machine_extension_type: 'CustomScript'
-        type_handler_version: '1.10'
+        publisher: Microsoft.Compute
+        virtual_machine_extension_type: CustomScript
+        type_handler_version: 1.10
         settings: 
           commandToExecute: |
             powershell -ExecutionPolicy Unrestricted -Command "
