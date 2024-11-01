@@ -130,19 +130,8 @@
         ansible_winrm_transport: basic
         ansible_winrm_server_cert_validation: ignore
 
-- name: Wait for WinRM and Connect to VM
-  hosts: newhost
-  gather_facts: no
-  tasks:
-    - name: Wait for WinRM to be ready on the new VM
-      ansible.builtin.wait_for:
-        host: '{{ ansible_host }}'
-        port: 5986
-        delay: 10
-        timeout: 600  # Timeout ingesteld op 10 minuten
-      delegate_to: localhost
-
     - name: Create Notepad file with text "het werkt" on the Desktop
+      hosts: newhost
       ansible.windows.win_shell: |
         $desktopPath = "C:\Users\{{ ansible_user }}\Desktop"
         New-Item -Path $desktopPath -Name 'test.txt' -ItemType 'file' -Force
