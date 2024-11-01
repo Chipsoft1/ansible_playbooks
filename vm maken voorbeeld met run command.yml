@@ -6,25 +6,21 @@
         resource_group: '{{ resource_group }}'
         name: '{{ virtual_network_name }}'
         address_prefixes: '{{ address_prefixes }}'
-
     - name: Add subnet
       azure.azcollection.azure_rm_subnet:
         resource_group: '{{ resource_group }}'
         name: '{{ subnet_name }}'
         address_prefix: '{{ subnet_address_prefix }}'
         virtual_network: '{{ virtual_network_name }}'
-
     - name: Create public IP address
       azure.azcollection.azure_rm_publicipaddress:
         resource_group: '{{ resource_group }}'
         allocation_method: Static
         name: '{{ public_ip_name }}'
       register: output_ip_address
-
     - name: Output public IP
       debug:
         msg: 'The public IP is {{ output_ip_address.state.ip_address }}'
-
     - name: Create Network Security Group
       azure.azcollection.azure_rm_securitygroup:
         resource_group: '{{ resource_group }}'
@@ -52,7 +48,6 @@
             access: Allow
             priority: 1003
             direction: Inbound
-
     - name: Create a network interface
       azure.azcollection.azure_rm_networkinterface:
         name: nic
@@ -64,7 +59,6 @@
           - name: default
             public_ip_address_name: '{{ public_ip_name }}'
             primary: true
-
     - name: Create VM
       azure.azcollection.azure_rm_virtualmachine:
         resource_group: '{{ resource_group }}'
@@ -80,15 +74,13 @@
           sku: '{{ image_sku }}'
           version: '{{ image_version }}'
       no_log: false
-
-    # WinRM configuratie en bestand aanmaken
     - name: Enable WinRM on the new VM & create notepad file
       azure.azcollection.azure_rm_virtualmachineextension:
         resource_group: '{{ resource_group }}'
         virtual_machine_name: '{{ vm_name }}'
-        name: 'enableWinRM'
-        publisher: 'Microsoft.Compute'
-        virtual_machine_extension_type: 'CustomScriptExtension'
+        name: enableWinRM
+        publisher: Microsoft.Compute
+        virtual_machine_extension_type: CustomScriptExtension
         type_handler_version: '1.10'
         settings:
           commandToExecute: |
@@ -112,10 +104,9 @@
                   New-NetFirewallRule -DisplayName 'Allow WinRM HTTP' -Direction Inbound -Protocol TCP -LocalPort 5985 -Action Allow | Out-String;
 
                   # Maak Notepad bestand op de Desktop met "het werkt"
-                  $desktopPath = \"C:\\Users\\{{ admin_username }}\\Desktop\"
-                  Write-Output \"Creating Notepad file in: $desktopPath\"
-                  New-Item -Path $desktopPath -Name 'test.txt' -ItemType 'file' -Force | Out-String;
-                  Add-Content -Path \"$desktopPath\\test.txt\" -Value 'het werkt' | Out-String;
+                  # Maak notepad file met inhoud
+                  New-Item -Path C:\Users\{{ ansible_user }}\Desktop\ -Name 'test.txt' -ItemType 'file' -Force;
+                  Add-Content -Path C:\Users\{{ ansible_user }}\Desktop\test.txt -Value 'het werkt';
 
                   Write-Output 'Script executed successfully.'
               }
@@ -127,7 +118,6 @@
       register: winrm_extension
       retries: 3
       delay: 15
-
     - name: Show output of WinRM configuration and Notepad file creation
       debug:
-        msg: "{{ winrm_extension }}"
+        msg: '{{ winrm_extension }}'
