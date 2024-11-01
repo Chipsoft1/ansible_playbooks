@@ -27,7 +27,7 @@
 
     - name: Create Network Security Group
       azure.azcollection.azure_rm_securitygroup:
-        resource_group: '{{ resource_group }}'
+        resource_group: '{{ resource_group_name }}'
         name: '{{ security_group_name }}'
         rules:
           - name: allow_rdp
@@ -81,14 +81,14 @@
           version: '{{ image_version }}'
       no_log: false
 
-    # WinRM Configuratie in één enkele CustomScriptExtension
+    # WinRM Configuratie
     - name: Enable WinRM on the new VM
-      azure.azcollection.azure_rm_virtualmachineextension:
+      azure.azcollection.azure_rm_virtualmachine_extension:
         resource_group: '{{ resource_group }}'
         virtual_machine_name: '{{ vm_name }}'
         name: 'enableWinRM'
         publisher: 'Microsoft.Compute'
-        virtual_machine_extension_type: 'CustomScriptExtension'
+        type: 'CustomScriptExtension'
         type_handler_version: '1.10'
         settings:
           commandToExecute: |
@@ -110,25 +110,24 @@
       retries: 3
       delay: 15
 
-    - name: Set public IP address fact
-      set_fact:
-        publicipaddress: "{{ output_ip_address.state.ip_address }}"
+    - name: Add the new VM to the inventory
+      add_host:
+        name: newhost
+        ansible_host: '{{ output_ip_address.state.ip_address }}'
+        ansible_user: '{{ admin_username }}'
+        ansible_password: '{{ admin_password }}'
+        ansible_port: 5986
+        ansible_connection: winrm
+        ansible_winrm_transport: basic
+        ansible_winrm_server_cert_validation: ignore
 
 - name: Wait for WinRM and Connect to VM
   hosts: newhost
   gather_facts: no
-  vars:
-    ansible_host: '{{ output_ip_address.state.ip_address }}'
-    ansible_user: '{{ admin_username }}'
-    ansible_password: '{{ admin_password }}'
-    ansible_port: 5986
-    ansible_connection: winrm
-    ansible_winrm_transport: basic
-    ansible_winrm_server_cert_validation: ignore
   tasks:
     - name: Wait for WinRM to be ready on the new VM
       ansible.builtin.wait_for:
-        host: '{{ output_ip_address.state.ip_address }}'
+        host: '{{ ansible_host }}'
         port: 5986
         delay: 10
         timeout: 600  # Timeout ingesteld op 10 minuten
@@ -138,5 +137,3 @@
       ansible.windows.win_shell: |
         New-Item -Path C:\Users\{{ ansible_user }}\Desktop\ -Name "test.txt" -ItemType "file" -Force
         Add-Content -Path C:\Users\{{ ansible_user }}\Desktop\test.txt -Value "het werkt"
-
-
