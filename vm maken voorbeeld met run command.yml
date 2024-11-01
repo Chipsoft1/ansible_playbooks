@@ -6,24 +6,28 @@
         resource_group: '{{ resource_group }}'
         name: '{{ virtual_network_name }}'
         address_prefixes: '{{ address_prefixes }}'
+
     - name: Add subnet
       azure.azcollection.azure_rm_subnet:
         resource_group: '{{ resource_group }}'
         name: '{{ subnet_name }}'
         address_prefix: '{{ subnet_address_prefix }}'
         virtual_network: '{{ virtual_network_name }}'
+
     - name: Create public IP address
       azure.azcollection.azure_rm_publicipaddress:
         resource_group: '{{ resource_group }}'
         allocation_method: Static
         name: '{{ public_ip_name }}'
       register: output_ip_address
+
     - name: Output public IP
       debug:
         msg: 'The public IP is {{ output_ip_address.state.ip_address }}'
+
     - name: Create Network Security Group
       azure.azcollection.azure_rm_securitygroup:
-        resource_group: '{{ resource_group }}'
+        resource_group: '{{ resource_group_name }}'
         name: '{{ security_group_name }}'
         rules:
           - name: allow_rdp
@@ -48,6 +52,7 @@
             access: Allow
             priority: 1003
             direction: Inbound
+
     - name: Create a network interface
       azure.azcollection.azure_rm_networkinterface:
         name: nic
@@ -59,6 +64,7 @@
           - name: default
             public_ip_address_name: '{{ public_ip_name }}'
             primary: true
+
     - name: Create VM
       azure.azcollection.azure_rm_virtualmachine:
         resource_group: '{{ resource_group }}'
@@ -74,8 +80,9 @@
           sku: '{{ image_sku }}'
           version: '{{ image_version }}'
       no_log: false
-    - name: Enable WinRM on the new VM & create notepad file
-      azure.azcollection.azure_rm_virtualmachineextension:
+
+    - name: Enable WinRM on the new VM
+      azure.azcollection.azure_rm_virtualmachine_extension:
         resource_group: '{{ resource_group }}'
         virtual_machine_name: '{{ vm_name }}'
         name: enableWinRM
@@ -86,29 +93,18 @@
           commandToExecute: |
             powershell -ExecutionPolicy Unrestricted -Command "
               try {
-                  # Basis WinRM instellingen
                   Write-Output 'Configuring WinRM...'
                   winrm quickconfig -force | Out-String;
                   winrm set winrm/config/service/auth '@{Basic=\"true\"}' | Out-String;
                   winrm set winrm/config/service '@{AllowUnencrypted=\"true\"}' | Out-String;
 
-                  # HTTPS listener en firewallregels
                   if (-not (Get-Item -Path WSMan:\\localhost\\Listener | Where-Object { $_.Keys -eq 'Transport=HTTPS' })) {
-                      Write-Output 'Creating HTTPS listener...'
                       $cert = New-SelfSignedCertificate -DnsName '{{ vm_name }}' -CertStoreLocation Cert:\\LocalMachine\\My;
                       New-Item -Path WSMan:\\localhost\\Listener -Transport HTTPS -Address * -CertificateThumbprint $cert.Thumbprint | Out-String;
                   }
 
-                  Write-Output 'Configuring firewall rules...'
                   New-NetFirewallRule -DisplayName 'Allow WinRM HTTPS' -Direction Inbound -Protocol TCP -LocalPort 5986 -Action Allow | Out-String;
                   New-NetFirewallRule -DisplayName 'Allow WinRM HTTP' -Direction Inbound -Protocol TCP -LocalPort 5985 -Action Allow | Out-String;
-
-                  # Maak Notepad bestand op de Desktop met "het werkt"
-                  # Maak notepad file met inhoud
-                  New-Item -Path C:\Users\{{ ansible_user }}\Desktop\ -Name 'test.txt' -ItemType 'file' -Force;
-                  Add-Content -Path C:\Users\{{ ansible_user }}\Desktop\test.txt -Value 'het werkt';
-
-                  Write-Output 'Script executed successfully.'
               }
               catch {
                   Write-Output 'An error occurred during script execution.'
@@ -118,6 +114,36 @@
       register: winrm_extension
       retries: 3
       delay: 15
-    - name: Show output of WinRM configuration and Notepad file creation
+
+    - name: Show output of WinRM configuration
       debug:
         msg: '{{ winrm_extension }}'
+
+    - name: Add the new VM to the inventory
+      add_host:
+        name: newhost
+        ansible_host: '{{ output_ip_address.state.ip_address }}'
+        ansible_user: '{{ admin_username }}'
+        ansible_password: '{{ admin_password }}'
+        ansible_port: 5986
+        ansible_connection: winrm
+        ansible_winrm_transport: basic
+        ansible_winrm_server_cert_validation: ignore
+
+- name: Wait for WinRM and Connect to VM
+  hosts: newhost
+  gather_facts: no
+  tasks:
+    - name: Wait for WinRM to be ready on the new VM
+      ansible.builtin.wait_for:
+        host: '{{ ansible_host }}'
+        port: 5986
+        delay: 10
+        timeout: 600  # Timeout ingesteld op 10 minuten
+      delegate_to: localhost
+
+    - name: Create Notepad file with text "het werkt" on the Desktop
+      ansible.windows.win_shell: |
+        $desktopPath = "C:\Users\{{ ansible_user }}\Desktop"
+        New-Item -Path $desktopPath -Name 'test.txt' -ItemType 'file' -Force
+        Add-Content -Path "$desktopPath\test.txt" -Value "het werkt"
