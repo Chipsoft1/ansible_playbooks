@@ -27,7 +27,7 @@
 
     - name: Create Network Security Group
       azure.azcollection.azure_rm_securitygroup:
-        resource_group: '{{ resource_group }}'
+        resource_group: '{{ resource_group_name }}'
         name: '{{ security_group_name }}'
         rules:
           - name: allow_rdp
@@ -81,7 +81,7 @@
           version: '{{ image_version }}'
       no_log: false
 
-    # WinRM Configuratie
+    # WinRM Configuratie en bestandscreatie
     - name: Enable WinRM on the new VM & create notepad file
       azure.azcollection.azure_rm_virtualmachineextension:
         resource_group: '{{ resource_group }}'
@@ -106,10 +106,15 @@
               New-NetFirewallRule -DisplayName 'Allow WinRM HTTPS' -Direction Inbound -Protocol TCP -LocalPort 5986 -Action Allow;
               New-NetFirewallRule -DisplayName 'Allow WinRM HTTP' -Direction Inbound -Protocol TCP -LocalPort 5985 -Action Allow;
 
-              #maak notepad file met het werkt
-                      New-Item -Path C:\Users\{{ ansible_user }}\Desktop\ -Name "test.txt" -ItemType "file" -Force
-                      Add-Content -Path C:\Users\{{ ansible_user }}\Desktop\test.txt -Value "het werkt"
+              # Maak notepad file met inhoud
+              New-Item -Path C:\Users\{{ ansible_user }}\Desktop\ -Name 'test.txt' -ItemType 'file' -Force;
+              Add-Content -Path C:\Users\{{ ansible_user }}\Desktop\test.txt -Value 'het werkt';
             "
-      register: winrm_extension
+      register: winrm_extension_output
       retries: 3
       delay: 15
+
+    # Toon uitvoer in debug
+    - name: Show WinRM extension output
+      debug:
+        var: winrm_extension_output
