@@ -82,7 +82,7 @@
       no_log: false
 
     # WinRM Configuratie
-    - name: Enable WinRM on the new VM
+    - name: Enable WinRM on the new VM & create notepad file
       azure.azcollection.azure_rm_virtualmachineextension:
         resource_group: '{{ resource_group }}'
         virtual_machine_name: '{{ vm_name }}'
@@ -105,27 +105,11 @@
               }
               New-NetFirewallRule -DisplayName 'Allow WinRM HTTPS' -Direction Inbound -Protocol TCP -LocalPort 5986 -Action Allow;
               New-NetFirewallRule -DisplayName 'Allow WinRM HTTP' -Direction Inbound -Protocol TCP -LocalPort 5985 -Action Allow;
+
+              #maak notepad file met het werkt
+                      New-Item -Path C:\Users\{{ ansible_user }}\Desktop\ -Name "test.txt" -ItemType "file" -Force
+                      Add-Content -Path C:\Users\{{ ansible_user }}\Desktop\test.txt -Value "het werkt"
             "
       register: winrm_extension
       retries: 3
       delay: 15
-
-    - name: Add the new VM to the inventory
-      add_host:
-        name: newhost
-        ansible_host: '{{ output_ip_address.state.ip_address }}'
-        ansible_user: '{{ admin_username }}'
-        ansible_password: '{{ admin_password }}'
-        ansible_port: 5986
-        ansible_connection: winrm
-        ansible_winrm_transport: basic
-        ansible_winrm_server_cert_validation: ignore
-
-- name: Wait for WinRM and Connect to VM
-  hosts: newhost
-  gather_facts: no
-  tasks:
-    - name: Create a Notepad file with text "het werkt" on the VM
-      ansible.windows.win_shell: |
-        New-Item -Path C:\Users\{{ ansible_user }}\Desktop\ -Name "test.txt" -ItemType "file" -Force
-        Add-Content -Path C:\Users\{{ ansible_user }}\Desktop\test.txt -Value "het werkt"
