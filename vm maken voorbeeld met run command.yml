@@ -6,21 +6,25 @@
         resource_group: '{{ resource_group }}'
         name: '{{ virtual_network_name }}'
         address_prefixes: '{{ address_prefixes }}'
+
     - name: Add subnet
       azure.azcollection.azure_rm_subnet:
         resource_group: '{{ resource_group }}'
         name: '{{ subnet_name }}'
         address_prefix: '{{ subnet_address_prefix }}'
         virtual_network: '{{ virtual_network_name }}'
+
     - name: Create public IP address
       azure.azcollection.azure_rm_publicipaddress:
         resource_group: '{{ resource_group }}'
         allocation_method: Static
         name: '{{ public_ip_name }}'
       register: output_ip_address
+
     - name: Output public IP
       debug:
         msg: 'The public IP is {{ output_ip_address.state.ip_address }}'
+
     - name: Create Network Security Group
       azure.azcollection.azure_rm_securitygroup:
         resource_group: '{{ resource_group }}'
@@ -48,6 +52,7 @@
             access: Allow
             priority: 1003
             direction: Inbound
+
     - name: Create a network interface
       azure.azcollection.azure_rm_networkinterface:
         name: nic
@@ -59,6 +64,7 @@
           - name: default
             public_ip_address_name: '{{ public_ip_name }}'
             primary: true
+
     - name: Create VM
       azure.azcollection.azure_rm_virtualmachine:
         resource_group: '{{ resource_group }}'
@@ -74,6 +80,7 @@
           sku: '{{ image_sku }}'
           version: '{{ image_version }}'
       no_log: false
+
     - name: Enable WinRM on the new VM
       azure.azcollection.azure_rm_virtualmachineextension:
         resource_group: '{{ resource_group }}'
@@ -107,9 +114,11 @@
       register: winrm_extension
       retries: 3
       delay: 15
+
     - name: Show output of WinRM configuration
       debug:
         msg: '{{ winrm_extension }}'
+
     - name: Add the new VM to the inventory
       add_host:
         name: newhost
@@ -120,9 +129,11 @@
         ansible_connection: winrm
         ansible_winrm_transport: basic
         ansible_winrm_server_cert_validation: ignore
+
+- name: Configure the new VM
+  hosts: newhost
+  tasks:
     - name: Create Notepad file with text "het werkt" on the Desktop
-      hosts: newhost
-      tasks:
       ansible.windows.win_shell: |
         $desktopPath = "C:\Users\{{ ansible_user }}\Desktop"
         New-Item -Path $desktopPath -Name 'test.txt' -ItemType 'file' -Force
