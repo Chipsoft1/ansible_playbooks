@@ -91,26 +91,28 @@
           commandToExecute: |
             powershell -ExecutionPolicy Unrestricted -Command "
               try {
-                  # Install WinRM if not present
+                  # Installeer en start WinRM indien nodig
                   if ((Get-Service -Name WinRM -ErrorAction SilentlyContinue) -eq $null) {
                       Install-WindowsFeature -Name WinRM
                       Set-Service -Name WinRM -StartupType Automatic
                       Start-Service -Name WinRM
+                  } else {
+                      Start-Service -Name WinRM
                   }
 
-                  # Configure WinRM listener for HTTPS
+                  # Configureer WinRM-luisteraar en instellingen
                   Write-Output 'Configuring WinRM...'
                   winrm quickconfig -force | Out-String;
                   winrm set winrm/config/service/auth '@{Basic=\"true\"}' | Out-String;
                   winrm set winrm/config/service '@{AllowUnencrypted=\"true\"}' | Out-String;
 
-                  # Create HTTPS listener if it does not exist
+                  # Maak HTTPS-luisteraar aan als deze nog niet bestaat
                   if (-not (Get-Item -Path WSMan:\\localhost\\Listener | Where-Object { $_.Keys -eq 'Transport=HTTPS' })) {
                       $cert = New-SelfSignedCertificate -DnsName '{{ vm_name }}' -CertStoreLocation Cert:\\LocalMachine\\My;
                       New-Item -Path WSMan:\\localhost\\Listener -Transport HTTPS -Address * -CertificateThumbprint $cert.Thumbprint | Out-String;
                   }
 
-                  # Add firewall rule for WinRM HTTPS
+                  # Voeg firewallregel toe voor WinRM HTTPS
                   New-NetFirewallRule -DisplayName 'Allow WinRM HTTPS' -Direction Inbound -Protocol TCP -LocalPort 5986 -Action Allow | Out-String;
               }
               catch {
@@ -126,6 +128,10 @@
       debug:
         msg: '{{ winrm_extension }}'
 
+    - name: Wait for 30 seconds before connecting to the new VM
+      wait_for:
+        timeout: 30
+
     - name: Add the new VM to the inventory
       add_host:
         name: newhost
@@ -136,8 +142,8 @@
         ansible_connection: winrm
         ansible_winrm_transport: basic
         ansible_winrm_server_cert_validation: ignore
-        ansible_winrm_operation_timeout_sec: 90  # verhoogde timeout
-        ansible_winrm_read_timeout_sec: 100      # verhoogde timeout
+        ansible_winrm_operation_timeout_sec: 120
+        ansible_winrm_read_timeout_sec: 150
 
 - name: Configure the new VM
   hosts: newhost
