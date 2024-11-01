@@ -27,7 +27,7 @@
 
     - name: Create Network Security Group
       azure.azcollection.azure_rm_securitygroup:
-        resource_group: '{{ resource_group_name }}'
+        resource_group: '{{ resource_group }}'
         name: '{{ security_group_name }}'
         rules:
           - name: allow_rdp
@@ -82,7 +82,7 @@
       no_log: false
 
     - name: Enable WinRM on the new VM
-      azure.azcollection.azure_rm_virtualmachine_extension:
+      azure.azcollection.azure_rm_virtualmachineextension:
         resource_group: '{{ resource_group }}'
         virtual_machine_name: '{{ vm_name }}'
         name: enableWinRM
