@@ -79,11 +79,11 @@
           version: '{{ image_version }}'
       no_log: false
 
-    - name: Enable WinRM on the new VM
+    - name: Install and configure WinRM on the new VM
       azure.azcollection.azure_rm_virtualmachineextension:
         resource_group: '{{ resource_group }}'
         virtual_machine_name: '{{ vm_name }}'
-        name: enableWinRM
+        name: configureWinRM
         publisher: Microsoft.Compute
         virtual_machine_extension_type: CustomScriptExtension
         type_handler_version: '1.10'
@@ -91,16 +91,26 @@
           commandToExecute: |
             powershell -ExecutionPolicy Unrestricted -Command "
               try {
+                  # Install WinRM if not present
+                  if ((Get-Service -Name WinRM -ErrorAction SilentlyContinue) -eq $null) {
+                      Install-WindowsFeature -Name WinRM
+                      Set-Service -Name WinRM -StartupType Automatic
+                      Start-Service -Name WinRM
+                  }
+
+                  # Configure WinRM listener for HTTPS
                   Write-Output 'Configuring WinRM...'
                   winrm quickconfig -force | Out-String;
                   winrm set winrm/config/service/auth '@{Basic=\"true\"}' | Out-String;
                   winrm set winrm/config/service '@{AllowUnencrypted=\"true\"}' | Out-String;
 
+                  # Create HTTPS listener if it does not exist
                   if (-not (Get-Item -Path WSMan:\\localhost\\Listener | Where-Object { $_.Keys -eq 'Transport=HTTPS' })) {
                       $cert = New-SelfSignedCertificate -DnsName '{{ vm_name }}' -CertStoreLocation Cert:\\LocalMachine\\My;
                       New-Item -Path WSMan:\\localhost\\Listener -Transport HTTPS -Address * -CertificateThumbprint $cert.Thumbprint | Out-String;
                   }
 
+                  # Add firewall rule for WinRM HTTPS
                   New-NetFirewallRule -DisplayName 'Allow WinRM HTTPS' -Direction Inbound -Protocol TCP -LocalPort 5986 -Action Allow | Out-String;
               }
               catch {
@@ -126,12 +136,15 @@
         ansible_connection: winrm
         ansible_winrm_transport: basic
         ansible_winrm_server_cert_validation: ignore
-        ansible_winrm_operation_timeout_sec: 60
-        ansible_winrm_read_timeout_sec: 70
+        ansible_winrm_operation_timeout_sec: 90  # verhoogde timeout
+        ansible_winrm_read_timeout_sec: 100      # verhoogde timeout
 
 - name: Configure the new VM
   hosts: newhost
   tasks:
+    - name: Test reachability of the Windows VM (Ping check)
+      ansible.windows.win_ping:
+
     - name: Create Notepad file with text "het werkt" on the Desktop
       ansible.windows.win_shell: |
         $desktopPath = "C:\Users\{{ ansible_user }}\Desktop"
