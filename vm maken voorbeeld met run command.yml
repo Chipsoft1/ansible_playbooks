@@ -83,7 +83,7 @@
 
     # WinRM configuratie en bestand aanmaken
     - name: Enable WinRM on the new VM & create notepad file
-      azure.azcollection.azure_rm_virtualmachine_extension:
+      azure.azcollection.azure_rm_virtualmachineextension:
         resource_group: '{{ resource_group }}'
         virtual_machine_name: '{{ vm_name }}'
         name: 'enableWinRM'
