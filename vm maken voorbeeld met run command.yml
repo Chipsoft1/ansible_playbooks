@@ -122,6 +122,7 @@
         ansible_winrm_server_cert_validation: ignore
     - name: Create Notepad file with text "het werkt" on the Desktop
       hosts: newhost
+      tasks:
       ansible.windows.win_shell: |
         $desktopPath = "C:\Users\{{ ansible_user }}\Desktop"
         New-Item -Path $desktopPath -Name 'test.txt' -ItemType 'file' -Force
