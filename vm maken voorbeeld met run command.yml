@@ -88,7 +88,7 @@
         virtual_machine_name: '{{ vm_name }}'
         name: 'enableWinRM'
         publisher: 'Microsoft.Compute'
-        type: 'CustomScriptExtension'
+        virtual_machine_extension_type: 'CustomScriptExtension'
         type_handler_version: '1.10'
         settings:
           commandToExecute: |
