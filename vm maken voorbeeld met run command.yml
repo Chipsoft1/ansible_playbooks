@@ -44,11 +44,9 @@
             access: Allow
             priority: 1002
             direction: Inbound
-          - name: allow_powershell_remoting
+          - name: allow_winrm_https
             protocol: Tcp
-            destination_port_range:
-              - 5985
-              - 5986
+            destination_port_range: 5986
             access: Allow
             priority: 1003
             direction: Inbound
@@ -104,7 +102,6 @@
                   }
 
                   New-NetFirewallRule -DisplayName 'Allow WinRM HTTPS' -Direction Inbound -Protocol TCP -LocalPort 5986 -Action Allow | Out-String;
-                  New-NetFirewallRule -DisplayName 'Allow WinRM HTTP' -Direction Inbound -Protocol TCP -LocalPort 5985 -Action Allow | Out-String;
               }
               catch {
                   Write-Output 'An error occurred during script execution.'
@@ -129,6 +126,8 @@
         ansible_connection: winrm
         ansible_winrm_transport: basic
         ansible_winrm_server_cert_validation: ignore
+        ansible_winrm_operation_timeout_sec: 60
+        ansible_winrm_read_timeout_sec: 70
 
 - name: Configure the new VM
   hosts: newhost
