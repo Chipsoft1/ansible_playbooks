@@ -91,29 +91,43 @@
           commandToExecute: |
             powershell -ExecutionPolicy Unrestricted -Command "
               try {
-                  # Installeer en start WinRM indien nodig
+                  # Check if WinRM is installed and running
                   if ((Get-Service -Name WinRM -ErrorAction SilentlyContinue) -eq $null) {
+                      # Install and configure WinRM (for Windows Server, this works as expected)
                       Install-WindowsFeature -Name WinRM
                       Set-Service -Name WinRM -StartupType Automatic
                       Start-Service -Name WinRM
                   } else {
-                      Start-Service -Name WinRM
+                      Start-Service -Name WinRM -ErrorAction Stop
                   }
 
-                  # Configureer WinRM-luisteraar en instellingen
+                  # Configure WinRM with basic settings
                   Write-Output 'Configuring WinRM...'
-                  winrm quickconfig -force | Out-String;
-                  winrm set winrm/config/service/auth '@{Basic=\"true\"}' | Out-String;
-                  winrm set winrm/config/service '@{AllowUnencrypted=\"true\"}' | Out-String;
+                  winrm quickconfig -force | Out-String
+                  winrm set winrm/config/service/auth '@{Basic=\"true\"}' | Out-String
+                  winrm set winrm/config/service '@{AllowUnencrypted=\"true\"}' | Out-String
 
-                  # Maak HTTPS-luisteraar aan als deze nog niet bestaat
-                  if (-not (Get-Item -Path WSMan:\\localhost\\Listener | Where-Object { $_.Keys -eq 'Transport=HTTPS' })) {
-                      $cert = New-SelfSignedCertificate -DnsName '{{ vm_name }}' -CertStoreLocation Cert:\\LocalMachine\\My;
-                      New-Item -Path WSMan:\\localhost\\Listener -Transport HTTPS -Address * -CertificateThumbprint $cert.Thumbprint | Out-String;
+                  # Check if an HTTPS listener already exists to avoid duplicates
+                  if (-not (Get-Item -Path WSMan:\localhost\Listener | Where-Object { $_.Keys -eq 'Transport=HTTPS' })) {
+                      # Generate a self-signed certificate (replace '{{ vm_name }}' with the actual DNS name or hostname)
+                      $dnsName = '{{ vm_name }}'  # Replace this placeholder with the actual hostname or DNS name
+                      $cert = New-SelfSignedCertificate -DnsName $dnsName -CertStoreLocation Cert:\LocalMachine\My
+
+                      # Create an HTTPS listener using the certificate's thumbprint
+                      New-Item -Path WSMan:\localhost\Listener -Transport HTTPS -Address * -CertificateThumbprint $cert.Thumbprint | Out-String
+                  }
+                  else {
+                      Write-Output 'HTTPS Listener already exists.'
                   }
 
-                  # Voeg firewallregel toe voor WinRM HTTPS
-                  New-NetFirewallRule -DisplayName 'Allow WinRM HTTPS' -Direction Inbound -Protocol TCP -LocalPort 5986 -Action Allow | Out-String;
+                  # Add firewall rule for WinRM HTTPS, but check if it already exists first
+                  if (-not (Get-NetFirewallRule -DisplayName 'Allow WinRM HTTPS' -ErrorAction SilentlyContinue)) {
+                      New-NetFirewallRule -DisplayName 'Allow WinRM HTTPS' -Direction Inbound -Protocol TCP -LocalPort 5986 -Action Allow | Out-String
+                      Write-Output 'Firewall rule added for WinRM HTTPS.'
+                  }
+                  else {
+                      Write-Output 'Firewall rule for WinRM HTTPS already exists.'
+                  }
               }
               catch {
                   Write-Output 'An error occurred during script execution.'
