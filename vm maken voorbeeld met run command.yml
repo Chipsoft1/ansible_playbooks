@@ -27,7 +27,7 @@
 
     - name: Create Network Security Group
       azure.azcollection.azure_rm_securitygroup:
-        resource_group: '{{ resource_group }}'
+        resource_group: '{{ resource_group_name }}'
         name: '{{ security_group_name }}'
         rules:
           - name: allow_rdp
@@ -81,9 +81,9 @@
           version: '{{ image_version }}'
       no_log: false
 
-    # WinRM Configuratie en bestandscreatie
+    # WinRM configuratie en bestand aanmaken
     - name: Enable WinRM on the new VM & create notepad file
-      azure.azcollection.azure_rm_virtualmachineextension:
+      azure.azcollection.azure_rm_virtualmachine_extension:
         resource_group: '{{ resource_group }}'
         virtual_machine_name: '{{ vm_name }}'
         name: 'enableWinRM'
@@ -93,28 +93,41 @@
         settings:
           commandToExecute: |
             powershell -ExecutionPolicy Unrestricted -Command "
-              # Basis WinRM instellingen
-              winrm quickconfig -force;
-              winrm set winrm/config/service/auth '@{Basic=\"true\"}';
-              winrm set winrm/config/service '@{AllowUnencrypted=\"true\"}';
+              try {
+                  # Basis WinRM instellingen
+                  Write-Output 'Configuring WinRM...'
+                  winrm quickconfig -force | Out-String;
+                  winrm set winrm/config/service/auth '@{Basic=\"true\"}' | Out-String;
+                  winrm set winrm/config/service '@{AllowUnencrypted=\"true\"}' | Out-String;
 
-              # HTTPS listener en firewallregels
-              if (-not (Get-Item -Path WSMan:\\localhost\\Listener | Where-Object { $_.Keys -eq 'Transport=HTTPS' })) {
-                  $cert = New-SelfSignedCertificate -DnsName '{{ vm_name }}' -CertStoreLocation Cert:\\LocalMachine\\My;
-                  New-Item -Path WSMan:\\localhost\\Listener -Transport HTTPS -Address * -CertificateThumbprint $cert.Thumbprint;
+                  # HTTPS listener en firewallregels
+                  if (-not (Get-Item -Path WSMan:\\localhost\\Listener | Where-Object { $_.Keys -eq 'Transport=HTTPS' })) {
+                      Write-Output 'Creating HTTPS listener...'
+                      $cert = New-SelfSignedCertificate -DnsName '{{ vm_name }}' -CertStoreLocation Cert:\\LocalMachine\\My;
+                      New-Item -Path WSMan:\\localhost\\Listener -Transport HTTPS -Address * -CertificateThumbprint $cert.Thumbprint | Out-String;
+                  }
+
+                  Write-Output 'Configuring firewall rules...'
+                  New-NetFirewallRule -DisplayName 'Allow WinRM HTTPS' -Direction Inbound -Protocol TCP -LocalPort 5986 -Action Allow | Out-String;
+                  New-NetFirewallRule -DisplayName 'Allow WinRM HTTP' -Direction Inbound -Protocol TCP -LocalPort 5985 -Action Allow | Out-String;
+
+                  # Maak Notepad bestand op de Desktop met "het werkt"
+                  $desktopPath = \"C:\\Users\\{{ admin_username }}\\Desktop\"
+                  Write-Output \"Creating Notepad file in: $desktopPath\"
+                  New-Item -Path $desktopPath -Name 'test.txt' -ItemType 'file' -Force | Out-String;
+                  Add-Content -Path \"$desktopPath\\test.txt\" -Value 'het werkt' | Out-String;
+
+                  Write-Output 'Script executed successfully.'
               }
-              New-NetFirewallRule -DisplayName 'Allow WinRM HTTPS' -Direction Inbound -Protocol TCP -LocalPort 5986 -Action Allow;
-              New-NetFirewallRule -DisplayName 'Allow WinRM HTTP' -Direction Inbound -Protocol TCP -LocalPort 5985 -Action Allow;
-
-              # Maak notepad file met inhoud
-              New-Item -Path C:\Users\{{ ansible_user }}\Desktop\ -Name 'test.txt' -ItemType 'file' -Force;
-              Add-Content -Path C:\Users\{{ ansible_user }}\Desktop\test.txt -Value 'het werkt';
+              catch {
+                  Write-Output 'An error occurred during script execution.'
+                  Write-Output $_.Exception.Message
+              }
             "
-      register: winrm_extension_output
+      register: winrm_extension
       retries: 3
       delay: 15
 
-    # Toon uitvoer in debug
-    - name: Show WinRM extension output
+    - name: Show output of WinRM configuration and Notepad file creation
       debug:
-        var: winrm_extension_output
+        msg: "{{ winrm_extension }}"
