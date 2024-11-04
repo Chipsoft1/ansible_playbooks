@@ -1,0 +1,52 @@
+- name: Configure Azure Network
+  hosts: localhost
+  tasks:
+    - name: Create virtual network
+      azure.azcollection.azure_rm_virtualnetwork:
+        resource_group: '{{ resource_group }}'
+        name: '{{ virtual_network_name }}'
+        address_prefixes: '{{ address_prefixes }}'
+
+    - name: Add subnet
+      azure.azcollection.azure_rm_subnet:
+        resource_group: '{{ resource_group }}'
+        name: '{{ subnet_name }}'
+        address_prefix: '{{ subnet_address_prefix }}'
+        virtual_network: '{{ virtual_network_name }}'
+
+    - name: Create public IP address
+      azure.azcollection.azure_rm_publicipaddress:
+        resource_group: '{{ resource_group }}'
+        allocation_method: Static
+        name: '{{ public_ip_name }}'
+      register: output_ip_address
+
+    - name: Output public IP
+      debug:
+        msg: 'The public IP is {{ output_ip_address.state.ip_address }}'
+
+    - name: Create Network Security Group
+      azure.azcollection.azure_rm_securitygroup:
+        resource_group: '{{ resource_group }}'
+        name: '{{ security_group_name }}'
+        rules:
+          - name: allow_rdp
+            protocol: Tcp
+            destination_port_range: 3389
+            access: Allow
+            priority: 1001
+            direction: Inbound
+          - name: allow_web_traffic
+            protocol: Tcp
+            destination_port_range:
+              - 80
+              - 443
+            access: Allow
+            priority: 1002
+            direction: Inbound
+          - name: allow_winrm_https
+            protocol: Tcp
+            destination_port_range: 5986
+            access: Allow
+            priority: 1003
+            direction: Inbound
