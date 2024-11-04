@@ -1,0 +1,96 @@
+- name: Create VM and Configure WinRM
+  hosts: localhost
+  tasks:
+    - name: Create a network interface
+      azure.azcollection.azure_rm_networkinterface:
+        name: nic
+        resource_group: '{{ resource_group }}'
+        virtual_network: '{{ virtual_network_name }}'
+        subnet_name: '{{ subnet_name }}'
+        security_group: '{{ security_group_name }}'
+        ip_configurations:
+          - name: default
+            public_ip_address_name: '{{ public_ip_name }}'
+            primary: true
+
+    - name: Create VM
+      azure.azcollection.azure_rm_virtualmachine:
+        resource_group: '{{ resource_group }}'
+        name: '{{ vm_name }}'
+        vm_size: '{{ vm_size }}'
+        admin_username: '{{ admin_username }}'
+        admin_password: '{{ admin_password }}'
+        network_interfaces: nic
+        os_type: Windows
+        image:
+          offer: '{{ image_offer }}'
+          publisher: '{{ image_publisher }}'
+          sku: '{{ image_sku }}'
+          version: '{{ image_version }}'
+      no_log: false
+
+    - name: Install and configure WinRM on the new VM
+      azure.azcollection.azure_rm_virtualmachineextension:
+        resource_group: '{{ resource_group }}'
+        virtual_machine_name: '{{ vm_name }}'
+        name: configureWinRM
+        publisher: Microsoft.Compute
+        virtual_machine_extension_type: CustomScriptExtension
+        type_handler_version: '1.10'
+        settings:
+          commandToExecute: |
+            powershell -ExecutionPolicy Unrestricted -Command "
+              try {
+                  if ((Get-Service -Name WinRM -ErrorAction SilentlyContinue) -eq $null) {
+                      Install-WindowsFeature -Name WinRM
+                      Set-Service -Name WinRM -StartupType Automatic
+                      Start-Service -Name WinRM
+                  } else {
+                      Start-Service -Name WinRM -ErrorAction Stop
+                  }
+
+                  Write-Output 'Configuring WinRM settings...'
+                  winrm set winrm/config/service/auth '@{Basic=\"true\"}' | Out-String
+                  winrm set winrm/config/service '@{AllowUnencrypted=\"true\"}' | Out-String
+                  winrm set winrm/config/winrs '@{MaxMemoryPerShellMB=\"1024\"}' | Out-String
+
+                  if (-not (Get-Item -Path WSMan:\localhost\Listener | Where-Object { $_.Keys -eq 'Transport=HTTPS' })) {
+                      $dnsName = '{{ vm_name }}'
+                      $cert = New-SelfSignedCertificate -DnsName $dnsName -CertStoreLocation Cert:\LocalMachine\My
+                      New-Item -Path WSMan:\localhost\Listener -Transport HTTPS -Address * -CertificateThumbprint $cert.Thumbprint | Out-String
+                  }
+                  else {
+                      Write-Output 'HTTPS Listener already exists.'
+                  }
+
+                  if (-not (Get-NetFirewallRule -DisplayName 'Allow WinRM HTTPS' -ErrorAction SilentlyContinue)) {
+                      New-NetFirewallRule -DisplayName 'Allow WinRM HTTPS' -Direction Inbound -Protocol TCP -LocalPort 5986 -Action Allow | Out-String
+                      Write-Output 'Firewall rule added for WinRM HTTPS.'
+                  }
+                  else {
+                      Write-Output 'Firewall rule for WinRM HTTPS already exists.'
+                  }
+              }
+              catch {
+                  Write-Output 'An error occurred during script execution.'
+                  Write-Output $_.Exception.Message
+              }
+            "
+      register: winrm_extension
+      retries: 3
+      delay: 15
+
+    - name: Wait for 30 seconds before connecting to the new VM
+      wait_for:
+        timeout: 30
+
+    - name: Add the new VM to the inventory
+      add_host:
+        name: newhost
+        ansible_host: '{{ output_ip_address.state.ip_address }}'
+        ansible_user: '{{ admin_username }}'
+        ansible_password: '{{ admin_password }}'
+        ansible_port: 5986
+        ansible_connection: winrm
+        ansible_winrm_transport: basic
+        ansible_winrm_server_cert_validation: ignore
