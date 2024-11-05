@@ -90,8 +90,6 @@
         settings: '{"fileUris": ["https://raw.githubusercontent.com/ansible/ansible/devel/examples/scripts/ConfigureRemotingForAnsible.ps1"],"commandToExecute": "powershell -ExecutionPolicy Unrestricted -File ConfigureRemotingForAnsible.ps1"}'
         auto_upgrade_minor_version: true
       register: winrm_extension
-      retries: 3
-      delay: 15
 
     - name: Show output of WinRM configuration
       debug:
@@ -99,7 +97,7 @@
 
     - name: Wait for 30 seconds before connecting to the new VM
       wait_for:
-        timeout: 30
+        timeout: 600
 
     - name: Add the new VM to the inventory
       add_host:
