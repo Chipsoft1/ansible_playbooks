@@ -87,7 +87,7 @@
         publisher: Microsoft.Compute
         virtual_machine_extension_type: CustomScriptExtension
         type_handler_version: '1.9'
-        settings: '{"fileUris": ["https://raw.githubusercontent.com/ansible/ansible/devel/examples/scripts/ConfigureRemotingForAnsible.ps1"],"commandToExecute": "powershell -ExecutionPolicy Unrestricted -File ConfigureRemotingForAnsible.ps1"}'
+        settings: '{"fileUris": ["https://raw.githubusercontent.com/Chipsoft1/ansible_playbooks/powershell-script/configurewinrm.ps1"],"commandToExecute": "powershell -ExecutionPolicy Unrestricted -File configurewinrm.ps1"}'
         auto_upgrade_minor_version: true
       register: winrm_extension
 
